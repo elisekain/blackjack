@@ -8,6 +8,20 @@ var dealerPoints = 0;
 //Two globally defined variables to assign values to the player's cash and bet aspects of gameplay
 var cash = 100;
 var bet = 10;
+var playerActionCount = 0;
+
+/////////////Update the bank and bet functions and display them
+function updateCash() {
+$('#cash').html('You have $' + cash.toString());
+$('#add-bet').html('Standard Bet: $' + bet.toString());
+}
+
+// Enable or disable buttons depending on game play
+function buttonDisabling(betButton, playButtons) {
+    $("#bet").attr("disabled", betButton);
+    $("#hit").attr("disabled", playButtons);
+    $("#stay").attr("disabled", playButtons);
+}
 
 //Constructor Function that generates the objects of the cards in the game, including the image of the back of the card.
 var Card = function (suit, value, royal, image) {
@@ -62,8 +76,7 @@ var makeCards = function() {
     console.log(cardObjects); //looking for missing cards
 }  //end of make card function
 
-makeCards(); //invoking the function that creates the cards
-shuffle (cardObjects);  //Calls the cardObjects function to shuffle the cards
+buttonDisabling(false, true);
 // console.log(cardObjects);
 //shuffle cards with math.random
 // credit to + Jonas Raoni Soares Silva
@@ -76,30 +89,64 @@ function shuffle(o){ //v1.0
 
 //////////////////winning conditions function
 var checkPlayerPoints = function(){
-    if (playerPoints < 21) {
+    if (playerPoints < 21 && playerActionCount < 3) {
       //keep the player's button active using else if statements
     } else if (playerPoints > 21){
+        // operate on the cash var to reduce by $10
+        cash -= 10;
+        // update the cash display UI to show reduced amount
+        updateCash();
       // report back to the player the result of the game and apppend that to the page
-      $('#player-result').append('You have busted and lost $10. Please refresh the page to play again.');
+      $('#player-result').append('You have busted and lost $10.');
+      buttonDisabling(false, true);
     } else if (playerPoints == 21){
+        cash += 10;
+        updateCash();
       // report back to the player the result of the game and apppend that to the page
       $('#player-result').append('You win $10! Great Job!');
-    }
+       buttonDisabling(false, true);
+   } else {
+       // Player has taken 3 "actions". Now we have to decide how the game ends.
+       if (playerPoints > dealerPoints) {
+           cash += 10;
+           updateCash();
+           $('#player-result').append('You win $10! Great Job!');
+           buttonDisabling(false, true);
+       } else if (playerPoints < dealerPoints) {
+           cash -= 10;
+           updateCash();
+           $('#player-result').append('You have lost $10 sorry!');
+           buttonDisabling(false, true);
+       } else {
+           $('#player-result').append('You have a tie, please play again!');
+            buttonDisabling(false, true);
+       }
+   }
 };
 
 var checkDealerPoints = function(){
-    if (dealerPoints < 17) {
+    if (dealerPoints < 17 && playerActionCount < 3) {
     } else if (dealerPoints > 21){
+        cash += 10;
+        updateCash();
       // report back to the player the result of the game and apppend that to the page
       $('#player-result').append('You win $10!');
+       buttonDisabling(false, true);
     } else if (dealerPoints > playerPoints){
+        cash -= 10;
+        updateCash();
       // report back to the player the result of the game and apppend that to the page
-      $('#player-result').append('You have lost $10 sorry! Please refresh the page to play again.');
-    } else if (dealerPoints == playerPoints){
+      $('#player-result').append('You have lost $10 sorry!');
+       buttonDisabling(false, true);
+    } else if (dealerPoints == playerPoints) {
+        // don't need to update the cash var.
       // report back to the player the result of the game and apppend that to the page
       $('#player-result').append('You have a tie, please play again!');
-    }
+       buttonDisabling(false, true);
+   }
 };
+
+
 
 ////////////////////////////////////////////Start of Click Events
 
@@ -109,6 +156,7 @@ var checkDealerPoints = function(){
     var sum = 0
     ///Delcare the variable dealPlayercard and assigns it to a function.
     var dealPlayerCard = function () {
+        playerActionCount++;
       //CardObjects is popping the last element from the array. Get card is holding on to the element that was popped out of the array.
       var getCard = cardObjects.pop();
       console.log(getCard);
@@ -136,6 +184,7 @@ var checkDealerPoints = function(){
 ////////////////////////////Start of dealer hand function
       ///Delcare the variable dealDealerCard and assigns it to a function.
       var dealDealerCard = function () {
+          playerActionCount++;
         //CardObjects is popping the last element from the array. Get card is holding on to the element that was popped out of the array.
         var getCard = cardObjects.pop();
         // console.log(getCard);
@@ -160,7 +209,16 @@ var checkDealerPoints = function(){
         }
 
 /////////////function that only creates the first two cards for the dealer and for the player to start gameplay after the initial bet
-    var twoCardsDealt = function() {
+    var startRound = function() {
+        playerActionCount = 1;
+        $("#player-cards").empty();
+        $("#dealer-cards").empty();
+        playerPoints = 0;
+        dealerPoints = 0;
+        cardObjects = [];
+        makeCards(); //invoking the function that creates the cards
+        shuffle (cardObjects);  //Calls the cardObjects function to shuffle the cards
+        buttonDisabling(true, false);
       // console.log("This is the two cards dealt function");
       for (var i = 0; i < 2; i++) {
         var getCard = cardObjects.pop();
@@ -184,33 +242,27 @@ var checkDealerPoints = function(){
       };
       checkPlayerPoints();
     };
-    $('#bet').click(twoCardsDealt);
+    $('#bet').click(startRound);
 
     /////////////Hit and Stay buttons
     $('#hit').click(dealPlayerCard);
     $('#stay').click(dealDealerCard);
 
-    /////////////Update the bank and bet functions and display them
-    function updateCash() {
-    $('#cash').html('You have $' + cash.toString());
-    $('#add-bet').html('Standard Bet: $' + bet.toString());
-    }
-
-    updateCash ();
+    updateCash();
     ///////////Make a bet and win 10 dollars if you win the game
-    $('#bet').click(function() {
-      if(cash >= bet) {
-        cash += 10;
-        updateCash();
-      }
-    });
+    // $('#bet').click(function() {
+    //   if(cash >= bet) {
+    //     cash += 10;
+    //     updateCash();
+    //   }
+    // });
     ///////////Make a bet and lose 10 dollars if you lose the game
-    $('#bet').click(function() {
-      if(cash > bet) {
-        cash -= 10;
-        updateCash();
-      }
-    });
+    // $('#bet').click(function() {
+    //   if(cash > bet) {
+    //     cash -= 10;
+    //     updateCash();
+    //   }
+    // });
 
 
 
